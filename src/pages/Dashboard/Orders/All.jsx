@@ -360,6 +360,8 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Row, Col, Card, Table, Tag, Space, Button, Input, Select, InputNumber, DatePicker, Form, Popconfirm, message, Modal } from 'antd';
 import { ShoppingCartOutlined, SearchOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/Auth';
+import { softDeleteFromLocalStorage } from '@/services/recyclebin';
 import dayjs from 'dayjs';
 
 const { Title, Paragraph, Text } = Typography;
@@ -367,29 +369,43 @@ const { Title, Paragraph, Text } = Typography;
 const AllOrders = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
+    const { user, userData } = useAuth();
     
     // State for data and role-based access
     const [orders, setOrders] = useState([]);
     const [systemUsers, setSystemUsers] = useState([]);
-    const [currentUser, setCurrentUser] = useState(null);
     const [searchText, setSearchText] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingOrder, setEditingOrder] = useState(null);
 
     useEffect(() => {
-        // Retrieve data and user session
+        // Retrieve data
         const storedOrders = localStorage.getItem('workshop_orders');
         const storedUsers = localStorage.getItem('workshop_users');
-        const user = JSON.parse(localStorage.getItem('current_user') || '{}');
         
-        setCurrentUser(user);
         if (storedOrders) try { setOrders(JSON.parse(storedOrders)); } catch (e) { setOrders([]); }
         if (storedUsers) try { setSystemUsers(JSON.parse(storedUsers)); } catch (e) { setSystemUsers([]); }
     }, []);
 
-    // Role check helper
-    const isAdmin = currentUser?.role === 'Admin';
+    // Role check helper (from Firebase Auth context)
+    const isAdmin = userData?.role === 'Admin';
+
+    const persistOrders = (updated) => {
+        setOrders(updated);
+        localStorage.setItem('workshop_orders', JSON.stringify(updated));
+    };
+
+    const handleDeleteOrder = async (record) => {
+        try {
+            await softDeleteFromLocalStorage('workshop_orders', 'key', record, user?.email || user?.uid);
+            persistOrders(orders.filter(o => o.key !== record.key));
+            message.success('Order moved to recycle bin');
+        } catch (error) {
+            console.error('Delete order failed:', error);
+            message.error('Failed to delete order');
+        }
+    };
 
     const showEditModal = (order) => {
         if (!isAdmin) return; // Prevent non-admins from opening the modal
@@ -425,11 +441,7 @@ const AllOrders = () => {
             render: (_, record) => (
                 <Space>
                     <Button type="text" icon={<EditOutlined style={{ color: '#1890ff' }} />} onClick={() => showEditModal(record)} />
-                    <Popconfirm title="Delete Order?" onConfirm={() => {
-                        const updated = orders.filter(o => o.key !== record.key);
-                        setOrders(updated);
-                        localStorage.setItem('workshop_orders', JSON.stringify(updated));
-                    }}>
+                    <Popconfirm title="Move order to recycle bin?" onConfirm={() => handleDeleteOrder(record)}>
                         <Button type="text" danger icon={<DeleteOutlined />} />
                     </Popconfirm>
                 </Space>

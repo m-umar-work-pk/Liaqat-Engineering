@@ -17,8 +17,9 @@ import {
   SearchOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc } from "firebase/firestore";
 import { db } from "@/config/firebase";
+import { softDeleteFromFirestore } from "@/services/recyclebin";
 import { useAuth } from "@/context/Auth";
 import { useNavigate } from "react-router-dom";
 
@@ -78,8 +79,9 @@ const MachinesList = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteDoc(doc(db, "machines", id));
-      message.success("Machine deleted");
+      const machine = machines.find((m) => m.id === id);
+      await softDeleteFromFirestore("machines", id, machine, user?.email || user?.uid);
+      message.success("Machine moved to recycle bin");
     } catch {
       message.error("Failed to delete machine");
     }

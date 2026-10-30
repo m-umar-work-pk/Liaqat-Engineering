@@ -13,6 +13,7 @@ import {
   FundProjectionScreenOutlined,
   DashboardOutlined,
   ShoppingCartOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 
 import { Link } from "react-router-dom";
@@ -154,6 +155,11 @@ export const getMenuItems = (role = "Customer"||"Admin"||"Workers") => {
             key: "11",
             label: <Link to="/dashboard/settings">Settings</Link>,
             icon: <SettingOutlined />,
+          },
+          {
+            key: "12",
+            label: <Link to="/dashboard/recyclebin">Recycle Bin</Link>,
+            icon: <DeleteOutlined />,
           },
         ]
       : []),

@@ -16,10 +16,9 @@ import {
 import {
   collection,
   onSnapshot,
-  deleteDoc,
-  doc,
 } from "firebase/firestore";
 import { firestore } from "@/config/firebase";
+import { softDeleteFromFirestore } from "@/services/recyclebin";
 import { useNavigate } from "react-router-dom";
 import { ExclamationCircleFilled } from "@ant-design/icons";
 import { useAuth } from "@/context/Auth";
@@ -33,7 +32,7 @@ const AllCustomer = () => {
   const [searchText, setSearchText] = useState("");
 
   const navigate = useNavigate();
-  const { userData, loading } = useAuth();
+  const { user, userData, loading } = useAuth();
 
   const isAdmin = userData?.role === "Admin";
 
@@ -63,8 +62,9 @@ const AllCustomer = () => {
 
       onOk: async () => {
         try {
-          await deleteDoc(doc(firestore, "customers", id));
-          message.success("Customer deleted successfully");
+          const customer = customers.find((c) => c.id === id);
+          await softDeleteFromFirestore("customers", id, customer, user?.email || user?.uid);
+          message.success("Customer moved to recycle bin");
         } catch (error) {
           console.error(error);
           message.error("Failed to delete customer");

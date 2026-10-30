@@ -253,8 +253,9 @@ import {
   Table, Button, Space, Popconfirm, Typography, message, Modal, Form, Input, Select, DatePicker, Row, Col 
 } from "antd";
 import { EditOutlined, DeleteOutlined, SearchOutlined } from "@ant-design/icons";
-import { collection, onSnapshot, deleteDoc, doc, getDoc, updateDoc, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, doc, getDoc, updateDoc, getDocs } from "firebase/firestore";
 import { db } from "@/config/firebase"; // Ensure this matches your project's import path
+import { softDeleteFromFirestore } from "@/services/recyclebin";
 import { useAuth } from "@/context/Auth";
 import dayjs from "dayjs";
 
@@ -328,6 +329,17 @@ const AllProjects = () => {
     }
   };
 
+  // 3b. Soft Delete -> move to recycle bin
+  const handleDelete = async (record) => {
+    try {
+      await softDeleteFromFirestore("projects", record.id, record, user?.email || user?.uid);
+      message.success("Project moved to recycle bin");
+    } catch (err) {
+      console.error(err);
+      message.error("Failed to delete project");
+    }
+  };
+
   // 4. Table Columns
   const columns = [
     { title: "Project Name", dataIndex: "projectName" },
@@ -345,7 +357,7 @@ const AllProjects = () => {
     { title: "Actions", render: (_, record) => (
         <Space>
           <Button disabled={role !== "admin"} icon={<EditOutlined />} type="primary" onClick={() => handleEdit(record)}>Edit</Button>
-          <Popconfirm title="Delete?" onConfirm={() => deleteDoc(doc(db, "projects", record.id))}>
+          <Popconfirm title="Move project to recycle bin?" onConfirm={() => handleDelete(record)}>
             <Button disabled={role !== "admin"} danger icon={<DeleteOutlined />}>Delete</Button>
           </Popconfirm>
         </Space>

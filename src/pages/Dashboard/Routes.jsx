@@ -14,6 +14,7 @@ import Customers from '../Dashboard/Customers';
 import Users from '../Dashboard/Users';
 import Orders from '../Dashboard/Orders';
 import Settings from '../Dashboard/Settings';
+import RecycleBin from '../Dashboard/RecycleBin';
 
 import PageNotFound from '@/components/pageNotFound';
 // ... (your other imports)
@@ -83,6 +84,12 @@ const AppRoutes = () => {
             <Route path='/settings/*' element={
                 <PrivateRoute allowedRoles={['Admin']}>
                     <Settings />
+                </PrivateRoute>
+            } />
+
+            <Route path='/recyclebin/*' element={
+                <PrivateRoute allowedRoles={['Admin']}>
+                    <RecycleBin />
                 </PrivateRoute>
             } />
 
